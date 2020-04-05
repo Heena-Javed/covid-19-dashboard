@@ -1,9 +1,55 @@
+<style>
+  .cards-container {
+    width: 35%;
+  }
+
+  .card {
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.0625);
+    border-radius: 5px;
+  }
+  .card-title {
+    background-color: #f5f5f5;
+    color: #333;
+    font-weight: 600;
+    padding: 10px 20px;
+  }
+
+  .card-body {
+    padding: 15px;
+    text-align: center;
+  }
+
+  .card-body-title {
+    font-size: 24px;
+  }
+
+  .card-content {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .card-item {
+    font-size: 18px;
+  }
+
+  @media (max-width: 992px) {
+    .cards-container {
+      width: 100%;
+    }
+  }
+</style>
+
 <script>
+  // 3rd Party Imports
   import { onMount } from 'svelte';
+  import { TableSort } from 'svelte-tablesort';
+  // Shared Resources
   import Box from '../shared/components/Box.svelte';
   import PageLoader from '../shared/components/PageLoader.svelte';
-  import { TableSort } from 'svelte-tablesort';
-
+  import DashboardTitle from '../shared/components/DashboardTitle.svelte';
+  import Table from '../shared/components/Table.svelte';
+  // Chart Imports
   import AgeChart from './Charts/AgeChart.svelte';
   import GenderChart from './Charts/GenderChart.svelte';
 
@@ -11,8 +57,10 @@
   let prevTableDataMap;
   let diffData;
   let rawPaitentData;
-  let isMobile = false;
+  let previousData;
   let loading = false;
+  let updatedDate;
+  let totalOutcome;
 
   function getDiff(current, prev) {
     return {
@@ -23,6 +71,10 @@
     };
   }
 
+  function calculatePercentage(num, total) {
+    return ((num / total) * 100).toFixed(2);
+  }
+
   async function getData() {
     loading = true;
     await fetch(`https://api.rootnet.in/covid19-in/unofficial/covid19india.org/statewise/history`)
@@ -31,12 +83,11 @@
         if (res.success && res.data) {
           const historyLen = res.data.history.length;
           currentData = res.data.history[historyLen - 1];
-          const previousData = res.data.history[historyLen - 2];
+          totalOutcome = currentData.total.recovered + currentData.total.deaths;
+          previousData = res.data.history[historyLen - 2];
           diffData = getDiff(currentData, previousData);
-          prevTableDataMap = previousData.statewise.reduce((initial, current) => {
-            initial[current.state] = current;
-            return initial;
-          }, {});
+
+          updatedDate = res.data.lastRefreshed;
         }
         loading = false;
       });
@@ -55,10 +106,10 @@
   onMount(() => {
     getData();
     getRawPatientData();
-    isMobile = window.innerWidth < 560;
   });
 </script>
 
+<DashboardTitle {updatedDate} />
 {#if currentData}
   <div class="main-data-container">
     <Box
@@ -66,24 +117,28 @@
       count="{currentData.total.confirmed}"
       type="confirmed"
       diff="{diffData.confirmed}"
+      day="{currentData.day}"
     />
     <Box
       label="Total Active"
       count="{currentData.total.active}"
       type="active"
       diff="{diffData.active}"
+      day="{currentData.day}"
     />
     <Box
       label="Total Recoverd"
       count="{currentData.total.recovered}"
       type="recovered"
       diff="{diffData.recovered}"
+      day="{currentData.day}"
     />
     <Box
       label="Total Deaths"
       count="{currentData.total.deaths}"
       type="deaths"
       diff="{diffData.deaths}"
+      day="{currentData.day}"
     />
   </div>
   <div class="charts">
@@ -92,73 +147,40 @@
       <GenderChart rawData="{rawPaitentData}" />
     {/if}
   </div>
-  <div class="table-container">
-    <TableSort items="{currentData.statewise}">
-      <tr slot="thead">
-        {#if isMobile}
-          <th data-sort="state">State / UT</th>
-          <th data-sort="confirmed" data-sort-initial="descending">CNFMRD</th>
-          <th data-sort="active">ACTV</th>
-          <th data-sort="recovered">RCVRD</th>
-          <th data-sort="deaths">DCSD</th>
-        {:else}
-          <th data-sort="state">State / UT</th>
-          <th data-sort="confirmed" data-sort-initial="descending">Confirmed</th>
-          <th data-sort="active">Active</th>
-          <th data-sort="recovered">Recovered</th>
-          <th data-sort="deaths">Dealths</th>
-        {/if}
-      </tr>
-      <tr slot="tbody" let:item="{data}">
-        <td class="state">{data.state}</td>
-        <td>
-          {data.confirmed}
-          <br />
-          {#if data.confirmed - prevTableDataMap[data.state].confirmed !== 0}
-            <small class="confirmed">
-              {data.confirmed - prevTableDataMap[data.state].confirmed} &Delta;
-            </small>
-          {/if}
-        </td>
-        <td>
-          {data.active}
-          <br />
-          {#if data.active - prevTableDataMap[data.state].active !== 0}
-            <small class="hospitalized">
-              {data.active - prevTableDataMap[data.state].active} &Delta;
-            </small>
-          {/if}
-        </td>
-        <td>
-          {data.recovered}
-          <br />
-          {#if data.recovered - prevTableDataMap[data.state].recovered !== 0}
-            <small class="recovered">
-              {data.recovered - prevTableDataMap[data.state].recovered} &Delta;
-            </small>
-          {/if}
-        </td>
-        <td>
-          {data.deaths}
-          <br />
-          {#if data.deaths - prevTableDataMap[data.state].deaths !== 0}
-            <small class="deaths">
-              {data.deaths - prevTableDataMap[data.state].deaths} &Delta;
-            </small>
-          {/if}
-        </td>
-      </tr>
-    </TableSort>
+  <div class="cards-container mt-container">
+    <div class="card">
+      <div class="card-title">Outcome Analysis</div>
+      <div class="card-body">
+        <small>Cases which have outcome / closed</small>
+        <div class="card-body-title">{totalOutcome}</div>
+        <div class="card-content">
+          <div>
+            <small>Recovered / Discharged</small>
+            <div class="card-item recovered">
+              {currentData.total.recovered} (
+              <strong>{calculatePercentage(currentData.total.recovered, totalOutcome)}%</strong>
+              )
+            </div>
+          </div>
+          <div>
+            <small>Deaths / Deceased</small>
+            <div class="card-item deaths">
+              {currentData.total.deaths} (
+              <strong>{calculatePercentage(currentData.total.deaths, totalOutcome)}%</strong>
+              )
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <p class="table-legends">
-    <small>&Delta; = Change in data from Previous day</small>
-  </p>
-  <p class="table-legends">
-    <small>** = Based on partial data</small>
-  </p>
-  <p class="table-legends">
-    <small>All coulums are sortable</small>
-  </p>
+  <div class="table-container mt-container">
+    <Table
+      tableData="{currentData.statewise}"
+      yesterdayTableData="{previousData.statewise}"
+      day="{currentData.day}"
+    />
+  </div>
 {:else if loading}
   <PageLoader />
 {/if}

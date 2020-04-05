@@ -22,7 +22,7 @@
     padding: 20px;
     text-align: center;
     border: 1px solid rgba(0, 0, 0, 0.0625);
-    width: 22%;
+    width: 23.5%;
     background-color: #fff;
   }
   .deaths .box-badge {
@@ -42,12 +42,12 @@
   }
   @media (max-width: 992px) {
     .box {
-      width: 48%;
+      width: 49%;
     }
   }
   @media (max-width: 560px) {
     .box {
-      width: 98%;
+      width: 100%;
     }
   }
 </style>
@@ -57,12 +57,24 @@
   export let type;
   export let label;
   export let diff;
+  export let day;
+
+  let sameDate;
+
+  function checkSameDate() {
+    const date = new Date();
+    const dateKey = `${date.getFullYear()}-${('0' + (date.getMonth() + 1)).slice(-2)}-${(
+      '0' + date.getDate()
+    ).slice(-2)}`;
+    sameDate = day === dateKey;
+  }
+  checkSameDate();
 </script>
 
 <div class="box">
   <div class="box-title">{label}</div>
   <div class="box-content {type}">
     <div class="box-data">{count}</div>
-    <div class="box-badge">+{diff}</div>
+    <div class="box-badge">+{sameDate ? diff : 0}</div>
   </div>
 </div>

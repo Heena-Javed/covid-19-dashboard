@@ -87,17 +87,23 @@
         datasets: [
           {
             label: 'Hospitalized',
-            backgroundColor: 'rgb(255,235,59)',
+            borderColor: 'rgb(33,150,243)',
+            borderWidth: 1,
+            backgroundColor: 'rgba(33,150,243, 0.4)',
             data: data.hospitalized
           },
           {
             label: 'Recovered',
-            backgroundColor: 'rgb(76, 175, 80)',
+            borderColor: 'rgb(76, 175, 80)',
+            borderWidth: 1,
+            backgroundColor: 'rgba(76, 175, 80, 0.4)',
             data: data.recovered
           },
           {
             label: 'Deceased',
-            backgroundColor: 'rgb(244, 67, 54)',
+            borderWidth: 1,
+            borderColor: 'rgb(244, 67, 54)',
+            backgroundColor: 'rgba(244, 67, 54, 0.4)',
             data: data.deceased
           }
         ]
@@ -129,10 +135,13 @@
   });
 </script>
 
-<div class="chart-container">
+<div class="chart-container mt-container">
   <h3 class="chart-title">
     Age Demography Chart
     <sup>**</sup>
   </h3>
   <canvas bind:this="{ageChartEle}"></canvas>
+  <p class="spl-legends">
+    <small>** = Based on partial data</small>
+  </p>
 </div>
